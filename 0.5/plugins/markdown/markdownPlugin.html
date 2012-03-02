@@ -6,6 +6,17 @@
 		<script type="text/javascript">
 			window.onload = function() {
 				var provider = new eclipse.PluginProvider();
+					
+				provider.registerServiceProvider("orion.file.contenttype", {}, {
+					contentTypes:
+						// Text types
+						[{	id: "text.markdown",
+							name: "Markdown",
+							extension: ["md"],
+							image: "images/md.gif"
+						}]
+					});
+
 				provider.connect();
 			};
 		</script>
