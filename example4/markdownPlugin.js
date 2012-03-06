@@ -51,6 +51,47 @@ window.onload = function() {
 			}
 		}
 	};
+	
+	/**
+	 * Walks a markdown DOM and adds any discovered links to the given array.
+	 */
+	function findLinks(node, links) {
+		//ignore strings
+		if (typeof(node) === "string") {
+			return;
+		}
+		if (node[0] === "link_ref") {
+			links.push(node[1]);
+			return;
+		}
+		//recurse on children
+		for (var i = 0; i < node.length; i++) {
+			findLinks(node[i], links);
+		}
+	}
+	
+	var validationService = {
+		checkSyntax : function(title, contents) {
+			var result = parse(contents);
+			var refs = result[1].references;
+			var links = [];
+			findLinks(result, links);
+			var problems = [];
+			for (var i = 0; i < links.length; i++) {
+				//check each link for a corresponding reference
+				if (!refs[links[i].ref]) {
+					//TODO links[i].original contains source.. we can find it to get line information
+					problems.push({
+						description: "Undefined link: " + links[i].ref,
+						line: 1,
+						start: 0,
+						severity: "error"
+					});
+				}
+			}
+			return { problems: problems };
+		}
+	};
 					
 	//finally create the plugin
 	var provider = new eclipse.PluginProvider();
@@ -68,6 +109,8 @@ window.onload = function() {
 		name: "Markdown Outline",
 		id: "orion.edit.outliner.markdown"
 	});
+	provider.registerServiceProvider("orion.edit.validator", validationService, {
+		contentType: ["text.markdown"]
+	});
 	provider.connect();
-
 };
