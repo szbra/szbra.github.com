@@ -26,7 +26,6 @@ window.onload = function() {
 
 	var serviceImpl = {
 		run : function(text) {
-		
 			return text + "\r\n" + sampleMarkdownContent;
 		}
 	};
@@ -36,6 +35,21 @@ window.onload = function() {
 	};
 	
 	provider.registerServiceProvider("orion.edit.command", serviceImpl, serviceProps);
+	
+	provider.registerServiceProvider("orion.edit.highlighter", {}, {
+	    type : "grammar",
+	    contentType: ["text.markdown"],
+	    grammar: {
+			patterns: [
+				{  
+					begin: "#", 
+					end: "\\$",
+					captures: { "0": "punctuation.definition.comment.html" },
+					contentName: "comment.block.html"
+				}
+			]
+	    }
+	});
 	
 	provider.connect();
 };
