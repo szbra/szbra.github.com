@@ -43,7 +43,7 @@ window.onload = function() {
 			patterns: [
 				{  
 					begin: "#", 
-					end: "\\$",
+					end: "^\\$",
 					captures: { "0": "punctuation.definition.comment.html" },
 					contentName: "comment.block.html"
 				}
