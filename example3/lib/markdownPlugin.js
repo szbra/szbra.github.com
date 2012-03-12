@@ -9,13 +9,16 @@
  *     IBM Corporation - initial API and implementation
  *******************************************************************************/
 /*jslint forin:true regexp:false*/
-/*global eclipse window */
+/*global define document require window eclipse orion*/
+
+require([
+'orion/plugin', 'orion/editor/MarkdownContentAssist', 'orion/editor/MarkdownGrammar'],
+function(mPlugin, MarkdownContentAssist, MarkdownGrammar) {
 
 window.onload = function() {
-					
-	// create the plugin
+// create the plugin
 	var provider = new eclipse.PluginProvider();
-
+	
 	var sampleMarkdownContent = 
 		"# Heading 1 \r\n" +
 		"## Sub-Heading 1.1 \r\n" +
@@ -36,20 +39,19 @@ window.onload = function() {
 	
 	provider.registerServiceProvider("orion.edit.command", serviceImpl, serviceProps);
 	
-	provider.registerServiceProvider("orion.edit.highlighter", {}, {
-	    type : "grammar",
-	    contentType: ["text.markdown"],
-	    grammar: {
-			patterns: [
-				{  
-					begin: "#", 
-					end: "^\\$",
-					captures: { "0": "punctuation.definition.comment.html" },
-					contentName: "comment.block.html"
-				}
-			]
-	    }
+	provider.registerServiceProvider("orion.edit.contentAssist",
+		new MarkdownContentAssist(), {	
+			name: "Markdown content assist",
+			contentType: ["text.markdown"]
+		}
+	);
+	
+	provider.registerServiceProvider("orion.edit.highlighter", {}, {	
+		type: "grammar",
+		contentType: ["text.markdown"],
+		grammar: new MarkdownGrammar()
 	});
 	
 	provider.connect();
 };
+});
