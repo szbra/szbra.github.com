@@ -66,12 +66,41 @@ define("orion/editor/MarkdownContentAssist", [], function() {
 	
 			//only offer HTML element proposals if the character preceeding the prefix is the start of an HTML element
 			var precedingChar = buffer.charAt(selection.offset-prefix.length-1);
+			
+			var element, proposalText, description, exitOffset;
+			
 			if (precedingChar !== '<') {
+			
+				//elements with no closing element (e.g., <hr>, <br>, etc)
+				var mdBlockElements = [["*", "* - unordered list item"],
+									 ["1.", "1. - ordered list item"],
+									 [">", "> - blockquote"],
+									 ["#", "# - 1st level header"],
+									 ["##", "## - 2nd level header"],
+									 ["###", "### - 3rd level header"],
+									 ["----------", "--- - horizontal rule"]];
+									 
+									 
+//									 *single asterisks*
+//									 **double asterisks**
+//									 [an example](http://example.com/ "Title")
+									 
+				for (var i = 0; i < mdBlockElements.length; i++) {
+					element = mdBlockElements[i][0];
+					description = mdBlockElements[i][1];
+					
+					if (element.indexOf(prefix) === 0) {
+						proposalText = element + " ";
+						//exit position is the end of the element, so we need to substract the prefix already typed
+						exitOffset = selection.offset+ proposalText.length -prefix.length;
+						proposals.push({proposal: proposalText, description: description, escapePosition: exitOffset});
+					}
+				}
+
 				return proposals;
 			}
 			
 			//elements that are typically placed on a single line (e.g., <b>, <h1>, etc)
-			var element, proposalText, description, exitOffset;
 			var singleLineElements = ["abbr","b","button","canvas","cite","command","dd","del","dfn","dt","em","embed",
 				"font","h1","h2","h3","h4","h5","h6","i","ins","kbd","label","li","mark","meter","object","option","output",
 				"progress","q","rp","rt","samp","small","strong","sub","sup","td","time","title","tt","u","var"];
