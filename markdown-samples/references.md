@@ -4,7 +4,7 @@ This is [an example] [id] reference-style link.
 
 Then, anywhere in the document, you define your link label like this, on a line by itself:
 
-[id]: http://example.com/  "Optional Title Here"
+[id]: http://example.com/ "Optional Title Here"
 
 # Implicit Name Link
 Visit [Daring Fireball][] for more information.
