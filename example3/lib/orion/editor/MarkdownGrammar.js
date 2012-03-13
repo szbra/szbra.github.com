@@ -43,7 +43,7 @@ define("orion/editor/MarkdownGrammar", [], function() {
 //				]
 //			},
 			{
-				"begin": "^( )*[\\*\\+\\-]|(\\d.) ",
+				"begin": "^( )*([\\*\\+\\-]|(\\d.)) ",
 				"end": "^$",
 				"beginCaptures": {
 					"0": { "name": "punctuation.definition.comment.html" }
