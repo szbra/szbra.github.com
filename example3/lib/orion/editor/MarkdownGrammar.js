@@ -30,6 +30,10 @@ define("orion/editor/MarkdownGrammar", [], function() {
 				"match": "^#.*$",
 				"name": "entity.name.tag.doctype.html"
 			},
+			{
+				"match": "(^\\[.*\\]: ?[\\w:/.\\?\\&=_-]+( \".*\")?$)|(\\[.*\\](\\(.*\\))?)",
+				"name": "token_keyword"
+			},
 //			{
 //				"begin": "Szymon$",
 //				"end": "Brandys$",
@@ -47,7 +51,10 @@ define("orion/editor/MarkdownGrammar", [], function() {
 				"endCaptures": {
 					"0": { "name": "punctuation.definition.comment.html" }
 				},
-				"contentName": "comment.block.html"
+				"contentName": "comment.block.html",
+				"patterns": [
+					{ "match": "\\[.*\\]", "name": "token_keyword"}
+				]
 			},
 			// inline HTML grammar
 			{
