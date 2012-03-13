@@ -63,39 +63,58 @@ define("orion/editor/MarkdownContentAssist", [], function() {
 				proposals.push({proposal: text, description: "Simple Markdown document", escapePosition: selection.offset+152});
 				return proposals;
 			}
-	
-			//only offer HTML element proposals if the character preceeding the prefix is the start of an HTML element
+
 			var precedingChar = buffer.charAt(selection.offset-prefix.length-1);
 			
 			var element, proposalText, description, exitOffset;
 			
+			// if the character preceeding the prefix is not the start of an HTML element,
+			// offer just the Markdown content assist
 			if (precedingChar !== '<') {
 			
-				//elements with no closing element (e.g., <hr>, <br>, etc)
-				var mdBlockElements = [["*", "* - unordered list item"],
+				// elements with no closing element
+				var mdNoClosingElements = [["*", "* - unordered list item"],
 									 ["1.", "1. - ordered list item"],
 									 [">", "> - blockquote"],
 									 ["#", "# - 1st level header"],
 									 ["##", "## - 2nd level header"],
 									 ["###", "### - 3rd level header"],
 									 ["----------", "--- - horizontal rule"]];
-									 
-									 
-//									 *single asterisks*
-//									 **double asterisks**
-//									 [an example](http://example.com/ "Title")
-									 
-				for (var i = 0; i < mdBlockElements.length; i++) {
-					element = mdBlockElements[i][0];
-					description = mdBlockElements[i][1];
+	 
+				for (var i = 0; i < mdNoClosingElements.length; i++) {
+					element = mdNoClosingElements[i][0];
+					description = mdNoClosingElements[i][1];
 					
 					if (element.indexOf(prefix) === 0) {
 						proposalText = element + " ";
-						//exit position is the end of the element, so we need to substract the prefix already typed
+						// exit position is the end of the element, so we need to substract the prefix already typed
 						exitOffset = selection.offset+ proposalText.length -prefix.length;
 						proposals.push({proposal: proposalText, description: description, escapePosition: exitOffset});
 					}
 				}
+				
+				
+				var mdWithClosingElements = [["*", "*emphasis_span*"],
+									 ["**", "**strong_span**"]];
+									 
+				for (i = 0; i < mdWithClosingElements.length; i++) {
+					element = mdWithClosingElements[i][0];
+					description = mdWithClosingElements[i][1];
+					
+					if (element.indexOf(prefix) === 0) {
+						proposalText = element + element;
+						
+						// exit position is the end of the opening element tag, so we need to substract the prefix already typed
+						exitOffset = selection.offset+element.length-prefix.length;
+						proposals.push({proposal: proposalText, description: description, escapePosition: exitOffset});
+					}
+				}
+				
+				proposalText = "[Link Name](http:// \"Optional Title Here\")";
+				description = "link";
+				// exit position inside
+				exitOffset = selection.offset - prefix.length + 19;
+				proposals.push({proposal: proposalText, description: description, escapePosition: exitOffset});
 
 				return proposals;
 			}
