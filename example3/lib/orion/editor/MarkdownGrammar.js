@@ -30,13 +30,24 @@ define("orion/editor/MarkdownGrammar", [], function() {
 				"match": "^#.*$",
 				"name": "entity.name.tag.doctype.html"
 			},
+//			{
+//				"begin": "Szymon$",
+//				"end": "Brandys$",
+//				"patterns": [
+//					{ "match": "> .+", "name": "entity.name.tag.doctype.html" },
+//					{ "match": "( {3,}|\t).+", "name": "entity.name.tag.doctype.html" }
+//				]
+//			},
 			{
-				"begin": "^$",
+				"begin": "^( )*[\\*\\+\\-]|(\\d.) ",
 				"end": "^$",
-				"patterns": [
-					{ "match": "> .+", "name": "entity.name.tag.doctype.html" },
-					{ "match": "( {3,}|\t).+", "name": "entity.name.tag.doctype.html" }
-				]
+				"beginCaptures": {
+					"0": { "name": "punctuation.definition.comment.html" }
+				},
+				"endCaptures": {
+					"0": { "name": "punctuation.definition.comment.html" }
+				},
+				"contentName": "comment.block.html"
 			},
 			// inline HTML grammar
 			{
