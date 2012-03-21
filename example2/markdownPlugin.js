@@ -17,10 +17,9 @@ window.onload = function() {
 	var provider = new eclipse.PluginProvider();
 	provider.registerServiceProvider("orion.file.contenttype", {}, {
 		contentTypes:
-			// Text types
-			[{	id: "text.markdown",
+			[{	id: "text/x-web-markdown",
 			name: "Markdown",
-			extension: ["md"],
+			extension: ["md", "markdown", "mdown","mkd", "mkdn"],
 			image: "http://szbra.github.com/example2/bin/md.gif"
 			}]
 	});
