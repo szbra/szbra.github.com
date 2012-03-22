@@ -14,23 +14,54 @@
 window.onload = function() {
 	// create the plugin
 	var provider = new eclipse.PluginProvider();
-	
-	var sampleMarkdownContent = 
-		"# Heading 1 \r\n" +
-		"## Sub-Heading 1.1 \r\n" +
-		"### Sub-Sub Heading 1.1.1 \r\n" +
-		"## Sub-Heading 1.2 \r\n" +
-		"# Heading 2 \r\n" +
-		"# Heading 3 \r\n";
 
 	var serviceImpl = {
-		run : function(text) {
-			return text + "\r\n" + sampleMarkdownContent;
+		run : function(selectedText, text, selection) {
+		
+			// convert or uncovert
+			var convert = true;
+		
+			var lines = selectedText.split('\n');
+					
+			for (var i=0; i<lines.length; i++){
+				var position = lines[i].search("^[ \t]*\\* ");
+				if (position > -1){
+					convert = false;
+				}			
+			}
+			
+			// convert the first line only if whole is selected
+			var include1 = true;
+			
+			if (selection.start !== 0 && text.charAt(selection.start-1) !== '\n'){
+				include1 = false;
+			}
+				 
+			var stringToReturn = "";
+
+			// now covert
+			for (i=0; i<lines.length; i++){
+				if ((i === 0 && !include1) || (lines[i].replace(/\s/g,"") === "")){
+					stringToReturn += lines[i];
+				} else {
+					if (convert){
+						stringToReturn += (lines[i].replace(new RegExp("^[ \t]*"), " * "));
+					} else {
+						stringToReturn += (lines[i].replace(new RegExp("^[ \t]*\\* "), ""));
+					}
+				}
+				
+				if ((i !== (lines.length - 1))) {
+					stringToReturn += '\n';
+				}
+			}
+
+			return stringToReturn;
 		}
 	};
 	
 	var serviceProps = {
-		name : "Add sample markdown"
+		name : "Convert to List"
 	};
 	
 	provider.registerServiceProvider("orion.edit.command", serviceImpl, serviceProps);
@@ -49,8 +80,7 @@ window.onload = function() {
 					"# Heading 2 \r\n" +
 					"# Heading 3 \r\n";
 				
-				proposals.push({proposal: text, description: "Simple Markdown document", escapePosition: selection.offset+152});
-				
+				proposals.push({proposal: text, description: "Simple Markdown document", escapePosition: selection.offset+152});	
 			}
 			
 			var proposalText = "[Link Name](http:// \"Optional Title Here\")";
