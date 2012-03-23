@@ -1,0 +1,110 @@
+/*******************************************************************************
+ * Copyright (c) 2012 IBM Corporation and others.
+ * All rights reserved. This program and the accompanying materials are made 
+ * available under the terms of the Eclipse Public License v1.0 
+ * (http://www.eclipse.org/legal/epl-v10.html), and the Eclipse Distribution 
+ * License v1.0 (http://www.eclipse.org/org/documents/edl-v10.html). 
+ *
+ * Contributors:
+ *     IBM Corporation - initial API and implementation
+ *******************************************************************************/
+/*jslint forin:true regexp:false*/
+/*global eclipse window */
+
+window.onload = function() {
+	/**
+	 * Parses a string containing markdown syntax, returning a simple JSON DOM
+	 */
+	function parse(contents) {
+		if (!window.markdown) {
+			return null;
+		}
+		return window.markdown.parse(contents);
+	}
+
+	/**
+	 * Converts a Markdown DOM into an array of outline elements as required
+	 * by the Orion outliner service.
+	 */
+	function domToOutline(dom) {
+		//end recursion
+		if (!dom) {
+			return null;
+		}
+		var outline = [];
+		for (var i = 0; i < dom.length; i++) {
+			var node = dom[i];
+			if (node[0] === "header") {
+				//for a header, label is third element in the list
+				outline.push({label: node[2]});
+			}
+		}
+		return outline;
+	}
+
+	// create the outline service instance
+	var outlineService = {
+		getOutline: function(contents, title) {
+			var dom = parse(contents);
+			if (dom) {
+				return domToOutline(dom);
+			}
+		}
+	};
+	
+	/**
+	 * Walks a markdown DOM and adds any discovered links to the given array.
+	 */
+	function findLinks(node, links) {
+		//ignore strings
+		if (typeof(node) === "string") {
+			return;
+		}
+		if (node[0] === "link_ref") {
+			links.push(node[1]);
+			return;
+		}
+		//recurse on children
+		for (var i = 0; i < node.length; i++) {
+			findLinks(node[i], links);
+		}
+	}
+	
+	var validationService = {
+		checkSyntax : function(title, contents) {
+			var result = parse(contents);
+			var refs = result[1].references;
+			var links = [];
+			findLinks(result, links);
+			var problems = [];
+			for (var i = 0; i < links.length; i++) {
+				//check each link for a corresponding reference
+				if (!refs[links[i].ref]) {
+					//TODO links[i].original contains source.. we can find it to get line information
+					problems.push({
+						description: "Undefined link: " + links[i].ref,
+						line: 1,
+						start: 0,
+						severity: "error"
+					});
+				}
+			}
+			return { problems: problems };
+		}
+	};
+					
+	//finally create the plugin
+	var provider = new eclipse.PluginProvider();
+
+	provider.registerServiceProvider("orion.edit.outliner", outlineService, {
+		contentType: ["text/x-web-markdown"],
+		name: "Markdown Outline",
+		id: "orion.edit.outliner.markdown"
+	});
+	
+	provider.registerServiceProvider("orion.edit.validator", validationService, {
+		contentType: ["text/x-web-markdown"]
+	});
+	
+	provider.connect();
+};
