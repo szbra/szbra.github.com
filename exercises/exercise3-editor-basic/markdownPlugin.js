@@ -45,51 +45,8 @@ window.onload = function() {
 	var provider = new eclipse.PluginProvider();
 
 	//editor command service	
-	var serviceImpl = {
-		run: function(selectedText, text, selection) {
-			return convertToFromList(selectedText);
-		}
-	};
-	var serviceProps = {
-		name: "Convert to List",
-		key: ["l", true, true]
-	};
-	provider.registerServiceProvider("orion.edit.command", serviceImpl, serviceProps);
 
 	//content assist service
-	var contentAssistImpl = {
-		computeProposals: function(prefix, buffer, selection) {
-			var proposals = [];
-
-			//template - simple markdown document
-			if (buffer.length === 0) {
-				var text = "# Heading 1 \r\n" + "## Sub-Heading 1.1 \r\n" + "### Sub-Sub Heading 1.1.1 \r\n" + "## Sub-Heading 1.2 \r\n" + "# Heading 2 \r\n" + "# Heading 3 \r\n";
-
-				proposals.push({
-					proposal: text,
-					description: "Simple Markdown document",
-					escapePosition: selection.offset + 152
-				});
-			}
-
-			var proposalText = "[Link Name](http:// \"Optional Title Here\")";
-			var description = "link";
-			// exit position inside
-			var exitOffset = selection.offset - prefix.length + 19;
-			proposals.push({
-				proposal: proposalText,
-				description: description,
-				escapePosition: exitOffset
-			});
-
-			return proposals;
-		}
-	};
-
-	provider.registerServiceProvider("orion.edit.contentAssist", contentAssistImpl, {
-		name: "Markdown content assist",
-		contentType: ["text/x-web-markdown"]
-	});
 
 	//syntax highlighting service
 	var markdownGrammar = {
@@ -126,12 +83,6 @@ window.onload = function() {
 			}]
 		}]
 	};
-
-	provider.registerServiceProvider("orion.edit.highlighter", {}, {
-		type: "grammar",
-		contentType: ["text/x-web-markdown"],
-		grammar: markdownGrammar
-	});
 
 	//content type service	
 	provider.registerServiceProvider("orion.file.contenttype", {}, {
