@@ -1,14 +1,3 @@
-/*******************************************************************************
- * Copyright (c) 2012 IBM Corporation and others.
- * All rights reserved. This program and the accompanying materials are made 
- * available under the terms of the Eclipse Public License v1.0 
- * (http://www.eclipse.org/legal/epl-v10.html), and the Eclipse Distribution 
- * License v1.0 (http://www.eclipse.org/org/documents/edl-v10.html). 
- *
- * Contributors:
- *     IBM Corporation - initial API and implementation
- *******************************************************************************/
-/*jslint forin:true regexp:false*/
 /*global eclipse window */
 
 window.onload = function() {
@@ -23,20 +12,30 @@ window.onload = function() {
 	}
 
 	/**
+	 * Returns the line of the first occurrence of term, or 1 if not found.
+	 * Line numbers start at 1.
+	 */
+	function getLine(text, term) {
+		var lines = text.split("\n");
+		for (var i = 0; i < lines.length; i++) {
+			if (lines[i].indexOf(term) >= 0) {
+				return i+1;
+			}
+		}
+		return 1;
+	}
+
+	/**
 	 * Converts a Markdown DOM into an array of outline elements as required
 	 * by the Orion outliner service.
 	 */
-	function domToOutline(dom) {
-		//end recursion
-		if (!dom) {
-			return null;
-		}
+	function domToOutline(dom, contents) {
 		var outline = [];
 		for (var i = 0; i < dom.length; i++) {
 			var node = dom[i];
 			if (node[0] === "header") {
 				//for a header, label is third element in the list
-				outline.push({label: node[2]});
+				outline.push({label: node[2], line: getLine(contents, node[2])});
 			}
 		}
 		return outline;
@@ -47,7 +46,7 @@ window.onload = function() {
 		getOutline: function(contents, title) {
 			var dom = parse(contents);
 			if (dom) {
-				return domToOutline(dom);
+				return domToOutline(dom, contents);
 			}
 		}
 	};
@@ -83,7 +82,7 @@ window.onload = function() {
 					//TODO links[i].original contains source.. we can find it to get line information
 					problems.push({
 						description: "Undefined link: " + links[i].ref,
-						line: 1,
+						line: getLine(contents, links[i].original),
 						start: 0,
 						severity: "error"
 					});
@@ -104,6 +103,16 @@ window.onload = function() {
 	
 	provider.registerServiceProvider("orion.edit.validator", validationService, {
 		contentType: ["text/x-web-markdown"]
+	});
+
+	//content type is always needed
+	provider.registerServiceProvider("orion.file.contenttype", {}, {
+		contentTypes:
+			[{	id: "text/x-web-markdown",
+			name: "Markdown",
+			extension: ["md", "markdown", "mdown","mkd", "mkdn"],
+			image: "http://szbra.github.com/example2/bin/md.gif"
+			}]
 	});
 	
 	provider.connect();
