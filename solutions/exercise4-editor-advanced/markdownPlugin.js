@@ -41,7 +41,9 @@ window.onload = function() {
 		return outline;
 	}
 
-	// create the outline service instance
+	var provider = new eclipse.PluginProvider();
+
+	// outline service
 	var outlineService = {
 		getOutline: function(contents, title) {
 			var dom = parse(contents);
@@ -50,6 +52,11 @@ window.onload = function() {
 			}
 		}
 	};
+	provider.registerServiceProvider("orion.edit.outliner", outlineService, {
+		contentType: ["text/x-web-markdown"],
+		name: "Markdown Outline",
+		id: "orion.edit.outliner.markdown"
+	});
 	
 	/**
 	 * Walks a markdown DOM and adds any discovered links to the given array.
@@ -92,15 +99,6 @@ window.onload = function() {
 		}
 	};
 					
-	//finally create the plugin
-	var provider = new eclipse.PluginProvider();
-
-	provider.registerServiceProvider("orion.edit.outliner", outlineService, {
-		contentType: ["text/x-web-markdown"],
-		name: "Markdown Outline",
-		id: "orion.edit.outliner.markdown"
-	});
-	
 	provider.registerServiceProvider("orion.edit.validator", validationService, {
 		contentType: ["text/x-web-markdown"]
 	});
