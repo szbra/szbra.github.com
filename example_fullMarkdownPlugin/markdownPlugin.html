@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<title>orion-codemirror plugin</title>
+		<script src="lib/requirejs/require.js"></script>
+		<script src="lib/markdown/markdown.js"></script>
+		<script>
+			/*global require*/
+			require.config({
+				baseUrl: 'lib/'
+			});
+			require(['./markdownPlugin']);
+		</script>
+	</head>
+	
+	<body>
+		This adds basic editor extensions for Markdown files to Orion.
+	</body>
+</html>
+
+
