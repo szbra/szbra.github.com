@@ -12,7 +12,7 @@
 /*global define document require window eclipse orion*/
 
 require([
-'orion/plugin', 'orion/editor/MarkdownContentAssist', 'orion/editor/MarkdownGrammar'],
+'orion/plugin', 'orion/editor/MarkdownContentAssist', 'orion/editor/MarkdownGrammar', 'markdown/markdown'],
 function(mPlugin, MarkdownContentAssist, MarkdownGrammar) {
 
 window.onload = function() {
