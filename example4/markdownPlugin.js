@@ -95,22 +95,16 @@ window.onload = function() {
 					
 	//finally create the plugin
 	var provider = new eclipse.PluginProvider();
-	provider.registerServiceProvider("orion.file.contenttype", {}, {
-		contentTypes:
-			// Text types
-			[{	id: "text.markdown",
-			name: "Markdown",
-			extension: ["md"],
-			image: "http://szbra.github.com/0.5/plugins/markdown/images/md.gif"
-			}]
-	});
+
 	provider.registerServiceProvider("orion.edit.outliner", outlineService, {
-		contentType: ["text.markdown"],
+		contentType: ["text/x-web-markdown"],
 		name: "Markdown Outline",
 		id: "orion.edit.outliner.markdown"
 	});
+	
 	provider.registerServiceProvider("orion.edit.validator", validationService, {
-		contentType: ["text.markdown"]
+		contentType: ["text/x-web-markdown"]
 	});
+	
 	provider.connect();
 };

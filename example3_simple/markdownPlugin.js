@@ -95,7 +95,7 @@ window.onload = function() {
 	
 	provider.registerServiceProvider("orion.edit.contentAssist", contentAssistImpl, {	
 		name: "Markdown content assist",
-		contentType: ["text.markdown"]
+		contentType: ["text/x-web-markdown"]
 	});
 	
 	var markdownGrammar = {
@@ -131,7 +131,7 @@ window.onload = function() {
 	
 	provider.registerServiceProvider("orion.edit.highlighter", {}, {	
 		type: "grammar",
-		contentType: ["text.markdown"],
+		contentType: ["text/x-web-markdown"],
 		grammar: markdownGrammar
 	});
 	
