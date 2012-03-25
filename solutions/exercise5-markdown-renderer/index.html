@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html style="height: 100%;">
+	<head>
+		<title>Orion Markdown Viewer</title>
+		<link rel="stylesheet" type="text/css" href="orion/editor/editor.css" />
+		<script src="requirejs/require.js"></script>
+		<script>
+		/*global require*/
+		require({
+			baseUrl: '',
+		
+			// set the paths to our library packages
+			packages: [{
+				name: 'dojo',
+				location: 'dojo',
+				main: 'lib/main-browser',
+				lib: '.'
+			}],
+			paths: {
+				i18n: 'requirejs/i18n'
+			}
+		});
+		require(["./index"]);
+		</script>
+	</head>
+	<body style="width: 100%; height: 100%; overflow: hidden; margin: 0px;">
+		<div id="markdown" style="width: 49%; height: 100%; background: #FAF0E6; float: left; overflow: auto; border: 1px solid #D3D3D3; margin: 5px;"></div>
+		<div style="width: 49%; height: 100%; float: right; border: 1px solid #D3D3D3; margin: 5px;">
+			<div id="logo" style="height: 28px; background: #404040; text-align: left;">
+				<span id="bar" style="height: 28px; vertical-align: top; color: #FFFFFF;">
+					<span id="status" style="height: 28px; vertical-align: top; color: #FFFFFF; float: right;"></span>
+					<div id="actions" style="height: 28px; padding-right: 8px; vertical-align: top; color: #FFFFFF;">
+						<a id="save">Save</a>
+					</div>
+				</span>
+			</div>
+			<div id="editor" style="width: 100%;"></div>
+		</div>
+	</body>
+</html>
