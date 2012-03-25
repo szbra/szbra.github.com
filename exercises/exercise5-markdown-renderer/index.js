@@ -26,7 +26,7 @@ define(['orion/serviceregistry',
 	var editor;
 
 	window.registerOrionFileService = function(host) {
-		host = host || "orion.eclipse.org";
+		host = host || "orionhub.org";
 		localStorage.orion = '{"plugins":["http://' + host + '/plugins/fileClientPlugin.html"]}';
 	};
 
@@ -205,7 +205,7 @@ define(['orion/serviceregistry',
 		var pluginRegistry = new mPluginRegistry.PluginRegistry(serviceRegistry);
 
 		var orionJSON = localStorage.orion;
-		var plugins = orionJSON ? JSON.parse(orionJSON).plugins : [];
+		var plugins = orionJSON ? JSON.parse(orionJSON).plugins : ["http://orionhub.org/plugins/fileClientPlugin.html"];
 
 		pluginRegistry.startup(plugins).then(function() {
 			editor = initializeEditor();
