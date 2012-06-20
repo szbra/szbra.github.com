@@ -8,7 +8,7 @@ window.onload = function() {
 	provider.registerServiceProvider("orion.page.link", {}, {
 		name: "Markdown Introduction",
 		id: "orion.example1.pageLink.markDown",
-		href: "http://daringfireball.net/projects/markdown/"
+		uriTemplate: "http://daringfireball.net/projects/markdown/"
 	});
 
 	provider.connect();
