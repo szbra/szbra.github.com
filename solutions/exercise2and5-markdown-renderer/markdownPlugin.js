@@ -18,19 +18,16 @@ window.onload = function() {
 	//navigator command service
 	var anchor = document.createElement('a');
 	anchor.href = "index.html";
-	provider.registerServiceProvider("orion.navigate.command", {
-		run: function(item) {
-			return anchor.href + "#" + item.Location;
-		}
-	}, {
+	provider.registerServiceProvider("orion.navigate.command", {}, {
 		name: "Markdown Viewer",
 		id: "sample.markdown.viewer",
 		forceSingleItem: true,
-		href: true,
 		tooltip: "Render Markdown File",
-		validationProperties: {
-			"Name": "*.md"
-		}
+		validationProperties: [
+		  {source: "Location", variableName: "Location"}
+		  ],
+		contentType: ["text/x-web-markdown"],
+		uriTemplate: anchor.href + "#{Location}"
 	});
 
 	//related link service

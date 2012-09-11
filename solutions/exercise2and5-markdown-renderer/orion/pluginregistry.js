@@ -73,7 +73,7 @@ eclipse.Plugin = function(url, data, internalRegistry) {
 			for(var i = 0; i < services.length; i++) {
 				var service = services[i];
 				var serviceProxy = _createServiceProxy(service);
-				_serviceRegistrations[service.serviceId] = internalRegistry.registerService(service.type, serviceProxy, service.properties);
+				_serviceRegistrations[service.serviceId] = internalRegistry.registerService(service.names[0], serviceProxy, service.properties);
 			}
 		}	
 	}
