@@ -1,8 +1,13 @@
 /*jslint browser:true devel:true*/
-/*global window eclipse */
+/*global window orion */
 
 window.onload = function() {
-	var provider = new eclipse.PluginProvider();
+	var headers = {
+		name: "Orion Markdown Example 5",
+		version: "1.0",
+		description: "Markdown plugin that provides a Markdown editor view."
+	};
+	var provider = new orion.PluginProvider(headers);
 
 	//content type service
 	provider.registerServiceProvider("orion.file.contenttype", {}, {

@@ -1,4 +1,4 @@
-/*global window eclipse*/
+/*global window orion */
 
 window.onload = function() {
 
@@ -42,7 +42,12 @@ window.onload = function() {
 		return result;
 	}
 	// create the plugin
-	var provider = new eclipse.PluginProvider();
+	var headers = {
+		name: "Orion Markdown Example 3",
+		version: "1.0",
+		description: "Markdown plugin that provides basic Markdown editor support."
+	};
+	var provider = new orion.PluginProvider(headers);
 
 	//editor command service	
 	var serviceImpl = {
@@ -134,7 +139,7 @@ window.onload = function() {
 	});
 
 	//content type service	
-	provider.registerServiceProvider("orion.file.contenttype", {}, {
+	provider.registerServiceProvider("orion.core.contenttype", {}, {
 	contentTypes:
 		[{	id: "text/x-web-markdown",
 		name: "Markdown",

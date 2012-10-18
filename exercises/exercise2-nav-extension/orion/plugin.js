@@ -1,6 +1,6 @@
 /*******************************************************************************
  * @license
- * Copyright (c) 2011 IBM Corporation and others.
+ * Copyright (c) 2011, 2012 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials are made 
  * available under the terms of the Eclipse Public License v1.0 
  * (http://www.eclipse.org/legal/epl-v10.html), and the Eclipse Distribution 
@@ -10,156 +10,203 @@
  *     IBM Corporation - initial API and implementation
  *******************************************************************************/
 
-/*global window addEventListener removeEventListener self*/
-
-/**
- * @private Don't jsdoc this.
- */
-var eclipse = eclipse || {};
-
-eclipse.ServiceProvider = function(serviceId, internalProvider) {
-	
-	this.dispatchEvent = function(eventName) {
-		internalProvider.dispatchEvent.apply(internalProvider, [serviceId, eventName].concat(Array.prototype.slice.call(arguments, 1)));	
-	};
-	
-	this.unregister = function() {
-		internalProvider.unregisterServiceProvider(serviceId);
-	};
-};
-
-eclipse.PluginProvider = function(metadata) {
-	var _metadata = metadata;
-	
-	var _services = [];
-	var _connected = false;
-	var _target = null;
-
-	function _publish(message) {
-		if (_target) {
-				_target.postMessage((window.ArrayBuffer ? message : JSON.stringify(message)), "*");	
-		}
+/*global window ArrayBuffer addEventListener removeEventListener self XMLHttpRequest define*/
+(function() {
+	var global = this;
+	if (!global.define) {
+		global.define = function(f) {
+			global.orion = global.orion || {};
+			global.orion.PluginProvider = f();
+			global.eclipse = global.orion; // (deprecated) backward compatibility 
+			delete global.define;
+		};
 	}
+}());
+
+define(function() {
+	function PluginProvider(headers) {
+		var _headers = headers;
+		var _services = [];
+		var _connected = false;
+		var _activePromises = {};
+		var _target = null;
 	
-	var _internalProvider = {
-			dispatchEvent: function(serviceId, eventName) {
-				if (!_connected) {
-					throw new Error("Cannot dispatchEvent. Plugin Provider not connected");
+		function _publish(message) {
+			if (_target) {
+				if (typeof(ArrayBuffer) === "undefined") { //$NON-NLS-0$
+					message = JSON.stringify(message);
 				}
-				var message = {
-					serviceId: serviceId,
-					method: "dispatchEvent",
-					params: [eventName].concat(Array.prototype.slice.call(arguments, 2))
+				if (_target === self) {
+					_target.postMessage(message);
+				} else {
+					_target.postMessage(message, "*"); //$NON-NLS-0$
+				}
+			}
+		}
+		
+		function _getPluginData() {
+			var services = [];
+			// we filter out the service implementation from the data
+			for (var i = 0; i < _services.length; i++) {
+				services.push({serviceId: i, names: _services[i].names, methods: _services[i].methods, properties: _services[i].properties });
+			}
+			return {headers: _headers || {}, services: services};		
+		}
+		
+		function _jsonXMLHttpRequestReplacer(name, value) {
+			if (value && value instanceof XMLHttpRequest) {
+				return {
+					status: value.status, 
+					statusText: value.statusText
 				};
-				_publish(message);
-				
-			},
-			unregisterServiceProvider: function(serviceId) {
+			}
+			return value;
+		}
+		
+		function _createListener(serviceId) {
+			return function(event) {
 				if (_connected) {
-					throw new Error("Cannot unregister. Plugin Provider is connected");
+					var message = {
+						serviceId: serviceId,
+						method: "dispatchEvent", //$NON-NLS-0$
+						params: [event]
+					};
+					_publish(message);
 				}
-				_services[serviceId] = null;
-			}
-	};
-	
-	function _getPluginData() {
-		var services = [];
-		for (var i = 0; i < _services.length; i++) {
-			if (_services[i]) {
-				services.push({serviceId: i, type: _services[i].type, methods: _services[i].methods, properties: _services[i].properties });
-			}
-		}
-		return {services: services, metadata: _metadata || {}};		
-	}
-	
-	function _handleRequest(event) {
+            };
+        }
 		
-		if (event.source !== _target ) {
-			return;
-		}
-		var message = (typeof event.data !== "string" ? event.data : JSON.parse(event.data));
-		var serviceId = message.serviceId;
-		var service = _services[serviceId].implementation;
-		var method = service[message.method];
-		
-		var response = {id: message.id, result: null, error: null};		
-		try {
-			var promiseOrResult = method.apply(service, message.params);
-			if(promiseOrResult && typeof promiseOrResult.then === "function"){
-				promiseOrResult.then(function(result) {
-					response.result = result;
+		function _handleRequest(event) {
+			if (event.source !== _target ) {
+				return;
+			}
+			var message = (typeof event.data !== "string" ? event.data : JSON.parse(event.data)); //$NON-NLS-0$
+			if (typeof message.cancel === "string") {
+				var promise = _activePromises[message.id];
+				if (promise) {
+					delete _activePromises[message.id];
+					if(promise.cancel) {
+						promise.cancel(message.cancel);
+					}
+				}
+				return;
+			}	
+			var serviceId = message.serviceId;
+			var methodName = message.method;
+			var params = message.params;
+			var service = _services[serviceId];
+			var implementation = service.implementation;
+			var method = implementation[methodName];
+			
+			var type;
+			if (methodName==="addEventListener") {
+				type = params[0];
+				service.listeners[type] = service.listeners[type] || _createListener(serviceId);
+				params = [type, service.listeners[type]]; 
+			} else if (methodName==="removeEventListener") {
+				type = params[0];
+				params = [type, service.listeners[type]];
+				delete service.listeners[type];
+			}
+			
+			var response = {id: message.id, result: null, error: null};		
+			try {
+				var promiseOrResult = method.apply(implementation, params);
+				if(promiseOrResult && typeof promiseOrResult.then === "function"){ //$NON-NLS-0$
+					_activePromises[message.id] = promiseOrResult;
+					promiseOrResult.then(function(result) {
+						delete _activePromises[message.id];
+						response.result = result;
+						_publish(response);
+					}, function(error) {
+						if (_activePromises[message.id]) {
+							delete _activePromises[message.id];
+							response.error = error ? JSON.parse(JSON.stringify(error, _jsonXMLHttpRequestReplacer)) : error; // sanitizing Error object 
+							_publish(response);
+						}
+					}, function() {
+						_publish({requestId: message.id, method: "progress", params: Array.prototype.slice.call(arguments)}); //$NON-NLS-0$
+					});
+				} else {
+					response.result = promiseOrResult;
 					_publish(response);
-				}, function(error) {
-					response.error = error ? JSON.parse(JSON.stringify(error)) : error; // sanitizing Error object 
-					_publish(response);
-				}, function() {
-					_publish({requestId: message.id, method: "progress", params: Array.prototype.slice.call(arguments)});
-				});
-			} else {
-				response.result = promiseOrResult;
+				}
+			} catch (error) {
+				response.error = error ? JSON.parse(JSON.stringify(error, _jsonXMLHttpRequestReplacer)) : error; // sanitizing Error object 
 				_publish(response);
 			}
-		} catch (error) {
-			response.error = error ? JSON.parse(JSON.stringify(error)) : error; // sanitizing Error object
-			_publish(response);
 		}
-	}
 	
-	this.registerServiceProvider = function(type, implementation, properties) {
-		if (_connected) {
-			throw new Error("Cannot register. Plugin Provider is connected");
-		}
-		
-		var method = null;
-		var methods = [];
-		for (method in implementation) {
-			if (typeof implementation[method] === 'function') {
-				methods.push(method);
+		this.updateHeaders = function(headers) {
+			if (_connected) {
+				throw new Error("Cannot update headers. Plugin Provider is connected");
 			}
-		}
+			_headers = headers;
+		};
 		
-		var serviceId = _services.length;
-		_services[serviceId] = {type: type, methods: methods, implementation: implementation, properties: properties || {}};
-		return new eclipse.ServiceProvider(serviceId, _internalProvider);	
-	};
+		this.registerService = function(names, implementation, properties) {
+			if (_connected) {
+				throw new Error("Cannot register service. Plugin Provider is connected");
+			}
+			
+			if (typeof names === "string") {
+				names = [names];
+			} else if (!Array.isArray(names)) {
+				names =[];
+			}
+			
+			var method = null;
+			var methods = [];
+			for (method in implementation) {
+				if (typeof implementation[method] === 'function') { //$NON-NLS-0$
+					methods.push(method);
+				}
+			}
+			var serviceId = _services.length;
+			_services[serviceId] = {names: names, methods: methods, implementation: implementation, properties: properties || {}, listeners: {}};
+		};
+		this.registerServiceProvider = this.registerService; // (deprecated) backwards compatibility only
+		
+		this.connect = function(callback, errback) {
+			if (_connected) {
+				if (callback) {
+					callback();
+				}
+				return;
+			}
 	
-	this.connect = function(callback, errback) {
-		if (_connected) {
+			if (typeof(window) === "undefined") { //$NON-NLS-0$
+				_target = self;
+			} else if (window !== window.parent) {
+				_target = window.parent;
+			} else if (window.opener !== null) {
+				_target = window.opener;
+			} else {
+				if (errback) {
+					errback("No valid plugin target");
+				}
+				return;
+			}
+			addEventListener("message", _handleRequest, false); //$NON-NLS-0$
+			var message = {
+				method: "plugin", //$NON-NLS-0$
+				params: [_getPluginData()]
+			};
+			_publish(message);
+			_connected = true;
 			if (callback) {
 				callback();
 			}
-			return;
-		}
-
-		if (!window) {
-			_target = self;
-		} else if (window !== window.parent) {
-			_target = window.parent;
-		} else if (window.opener !== null) {
-			_target = window.opener;
-		} else {
-			if (errback) {
-				errback("No valid plugin target");
-			}
-			return;
-		}
-		addEventListener("message", _handleRequest, false);
-		var message = {
-			method: "plugin",
-			params: [_getPluginData()]
 		};
-		_publish(message);
-		_connected = true;
-		if (callback) {
-			callback();
-		}
-	};
-	
-	this.disconnect = function() {
-		if (_connected) { 
-			removeEventListener("message", _handleRequest);
-			_target = null;
-			_connected = false;
-		}
-	};
-};
+		
+		this.disconnect = function() {
+			if (_connected) { 
+				removeEventListener("message", _handleRequest); //$NON-NLS-0$
+				_target = null;
+				_connected = false;
+			}
+			// Note: re-connecting is not currently supported
+		};
+	}
+	return PluginProvider;
+});

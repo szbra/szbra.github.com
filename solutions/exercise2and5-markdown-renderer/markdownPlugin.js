@@ -5,7 +5,7 @@ window.onload = function() {
 	var provider = new eclipse.PluginProvider();
 
 	//content type service
-	provider.registerServiceProvider("orion.file.contenttype", {}, {
+	provider.registerServiceProvider("orion.core.contenttype", {}, {
 	contentTypes:
 		[{	id: "text/x-web-markdown",
 		name: "Markdown",

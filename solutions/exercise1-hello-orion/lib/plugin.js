@@ -1,1 +1,212 @@
-var eclipse=eclipse||{};eclipse.ServiceProvider=function(a,b){this.dispatchEvent=function(c){b.dispatchEvent.apply(b,[a,c].concat(Array.prototype.slice.call(arguments,1)))},this.unregister=function(){b.unregisterServiceProvider(a)}},eclipse.PluginProvider=function(a){function i(a){if(a.source===e){var b=JSON.parse(a.data),d=b.serviceId,g=c[d].implementation,h=g[b.method],i={id:b.id,result:null,error:null};try{var j=h.apply(g,b.params);j&&typeof j.then=="function"?j.then(function(a){i.result=a,f(i)},function(a){i.error=a,f(i)}):(i.result=j,f(i))}catch(k){i.error=k,f(i)}}}function h(){var a=[];for(var d=0;d<c.length;d++)c[d]&&a.push({serviceId:d,type:c[d].type,methods:c[d].methods,properties:c[d].properties});return{services:a,metadata:b||{}}}function f(a){e&&e.postMessage(JSON.stringify(a),"*")}var b=a,c=[],d=!1,e=null,g={dispatchEvent:function(a,b){if(!d)throw new Error("Cannot dispatchEvent. Plugin Provider not connected");var c={serviceId:a,method:"dispatchEvent",params:[b].concat(Array.prototype.slice.call(arguments,2))};f(c)},unregisterServiceProvider:function(a){if(d)throw new Error("Cannot unregister. Plugin Provider is connected");c[a]=null}};this.registerServiceProvider=function(a,b,e){if(d)throw new Error("Cannot register. Plugin Provider is connected");var f=null,h=[];for(f in b)typeof b[f]=="function"&&h.push(f);var i=c.length;c[i]={type:a,methods:h,implementation:b,properties:e||{}};return new eclipse.ServiceProvider(i,g)},this.connect=function(a,b){if(d)a&&a();else{if(!window)e=self;else if(window!==window.parent)e=window.parent;else if(window.opener!==null)e=window.opener;else{b("No valid plugin target");return}addEventListener("message",i,!1);var c={method:"plugin",params:[h()]};f(c),d=!0,a&&a()}},this.disconnect=function(){d&&(removeEventListener("message",i),e=null,d=!1)}}
+/*******************************************************************************
+ * @license
+ * Copyright (c) 2011, 2012 IBM Corporation and others.
+ * All rights reserved. This program and the accompanying materials are made 
+ * available under the terms of the Eclipse Public License v1.0 
+ * (http://www.eclipse.org/legal/epl-v10.html), and the Eclipse Distribution 
+ * License v1.0 (http://www.eclipse.org/org/documents/edl-v10.html). 
+ *
+ * Contributors:
+ *     IBM Corporation - initial API and implementation
+ *******************************************************************************/
+
+/*global window ArrayBuffer addEventListener removeEventListener self XMLHttpRequest define*/
+(function() {
+	var global = this;
+	if (!global.define) {
+		global.define = function(f) {
+			global.orion = global.orion || {};
+			global.orion.PluginProvider = f();
+			global.eclipse = global.orion; // (deprecated) backward compatibility 
+			delete global.define;
+		};
+	}
+}());
+
+define(function() {
+	function PluginProvider(headers) {
+		var _headers = headers;
+		var _services = [];
+		var _connected = false;
+		var _activePromises = {};
+		var _target = null;
+	
+		function _publish(message) {
+			if (_target) {
+				if (typeof(ArrayBuffer) === "undefined") { //$NON-NLS-0$
+					message = JSON.stringify(message);
+				}
+				if (_target === self) {
+					_target.postMessage(message);
+				} else {
+					_target.postMessage(message, "*"); //$NON-NLS-0$
+				}
+			}
+		}
+		
+		function _getPluginData() {
+			var services = [];
+			// we filter out the service implementation from the data
+			for (var i = 0; i < _services.length; i++) {
+				services.push({serviceId: i, names: _services[i].names, methods: _services[i].methods, properties: _services[i].properties });
+			}
+			return {headers: _headers || {}, services: services};		
+		}
+		
+		function _jsonXMLHttpRequestReplacer(name, value) {
+			if (value && value instanceof XMLHttpRequest) {
+				return {
+					status: value.status, 
+					statusText: value.statusText
+				};
+			}
+			return value;
+		}
+		
+		function _createListener(serviceId) {
+			return function(event) {
+				if (_connected) {
+					var message = {
+						serviceId: serviceId,
+						method: "dispatchEvent", //$NON-NLS-0$
+						params: [event]
+					};
+					_publish(message);
+				}
+            };
+        }
+		
+		function _handleRequest(event) {
+			if (event.source !== _target ) {
+				return;
+			}
+			var message = (typeof event.data !== "string" ? event.data : JSON.parse(event.data)); //$NON-NLS-0$
+			if (typeof message.cancel === "string") {
+				var promise = _activePromises[message.id];
+				if (promise) {
+					delete _activePromises[message.id];
+					if(promise.cancel) {
+						promise.cancel(message.cancel);
+					}
+				}
+				return;
+			}	
+			var serviceId = message.serviceId;
+			var methodName = message.method;
+			var params = message.params;
+			var service = _services[serviceId];
+			var implementation = service.implementation;
+			var method = implementation[methodName];
+			
+			var type;
+			if (methodName==="addEventListener") {
+				type = params[0];
+				service.listeners[type] = service.listeners[type] || _createListener(serviceId);
+				params = [type, service.listeners[type]]; 
+			} else if (methodName==="removeEventListener") {
+				type = params[0];
+				params = [type, service.listeners[type]];
+				delete service.listeners[type];
+			}
+			
+			var response = {id: message.id, result: null, error: null};		
+			try {
+				var promiseOrResult = method.apply(implementation, params);
+				if(promiseOrResult && typeof promiseOrResult.then === "function"){ //$NON-NLS-0$
+					_activePromises[message.id] = promiseOrResult;
+					promiseOrResult.then(function(result) {
+						delete _activePromises[message.id];
+						response.result = result;
+						_publish(response);
+					}, function(error) {
+						if (_activePromises[message.id]) {
+							delete _activePromises[message.id];
+							response.error = error ? JSON.parse(JSON.stringify(error, _jsonXMLHttpRequestReplacer)) : error; // sanitizing Error object 
+							_publish(response);
+						}
+					}, function() {
+						_publish({requestId: message.id, method: "progress", params: Array.prototype.slice.call(arguments)}); //$NON-NLS-0$
+					});
+				} else {
+					response.result = promiseOrResult;
+					_publish(response);
+				}
+			} catch (error) {
+				response.error = error ? JSON.parse(JSON.stringify(error, _jsonXMLHttpRequestReplacer)) : error; // sanitizing Error object 
+				_publish(response);
+			}
+		}
+	
+		this.updateHeaders = function(headers) {
+			if (_connected) {
+				throw new Error("Cannot update headers. Plugin Provider is connected");
+			}
+			_headers = headers;
+		};
+		
+		this.registerService = function(names, implementation, properties) {
+			if (_connected) {
+				throw new Error("Cannot register service. Plugin Provider is connected");
+			}
+			
+			if (typeof names === "string") {
+				names = [names];
+			} else if (!Array.isArray(names)) {
+				names =[];
+			}
+			
+			var method = null;
+			var methods = [];
+			for (method in implementation) {
+				if (typeof implementation[method] === 'function') { //$NON-NLS-0$
+					methods.push(method);
+				}
+			}
+			var serviceId = _services.length;
+			_services[serviceId] = {names: names, methods: methods, implementation: implementation, properties: properties || {}, listeners: {}};
+		};
+		this.registerServiceProvider = this.registerService; // (deprecated) backwards compatibility only
+		
+		this.connect = function(callback, errback) {
+			if (_connected) {
+				if (callback) {
+					callback();
+				}
+				return;
+			}
+	
+			if (typeof(window) === "undefined") { //$NON-NLS-0$
+				_target = self;
+			} else if (window !== window.parent) {
+				_target = window.parent;
+			} else if (window.opener !== null) {
+				_target = window.opener;
+			} else {
+				if (errback) {
+					errback("No valid plugin target");
+				}
+				return;
+			}
+			addEventListener("message", _handleRequest, false); //$NON-NLS-0$
+			var message = {
+				method: "plugin", //$NON-NLS-0$
+				params: [_getPluginData()]
+			};
+			_publish(message);
+			_connected = true;
+			if (callback) {
+				callback();
+			}
+		};
+		
+		this.disconnect = function() {
+			if (_connected) { 
+				removeEventListener("message", _handleRequest); //$NON-NLS-0$
+				_target = null;
+				_connected = false;
+			}
+			// Note: re-connecting is not currently supported
+		};
+	}
+	return PluginProvider;
+});

@@ -1,8 +1,8 @@
 /*jslint browser:true devel:true*/
-/*global window eclipse */
+/*global window orion */
 
 window.onload = function() {
-	var provider = new eclipse.PluginProvider();
+	var provider = new orion.PluginProvider();
 
 	//content type service
 

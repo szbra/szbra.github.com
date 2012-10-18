@@ -1,1 +1,1 @@
-/*global eclipse window */
+/*global orion window */
