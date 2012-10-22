@@ -4,7 +4,7 @@ window.onload = function() {
 
 	//plugin metadata
 	var headers = {
-		name: "Shell Command Example 1",
+		name: "Shell Command Example 4",
 		version: "1.0",
 		description: "Sample shell extension"
 	};

@@ -43,7 +43,7 @@ window.onload = function() {
 	}
 	// create the plugin
 	var headers = {
-		name: "Orion Markdown Example 3",
+		name: "Orion Markdown Example 2",
 		version: "1.0",
 		description: "Markdown plugin that provides basic Markdown editor support."
 	};

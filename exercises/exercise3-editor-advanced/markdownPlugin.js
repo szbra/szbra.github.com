@@ -41,29 +41,6 @@ window.onload = function() {
 		return outline;
 	}
 
-	//plugin metadata
-	var headers = {
-		name: "Orion Markdown Example 4",
-		version: "1.0",
-		description: "Markdown plugin that provides validation and outline."
-	};
-	var provider = new eclipse.PluginProvider(headers);
-
-	// outline service
-	var outlineService = {
-		getOutline: function(contents, title) {
-			var dom = parse(contents);
-			if (dom) {
-				return domToOutline(dom, contents);
-			}
-		}
-	};
-	provider.registerServiceProvider("orion.edit.outliner", outlineService, {
-		contentType: ["text/x-web-markdown"],
-		name: "Markdown Outline",
-		id: "orion.edit.outliner.markdown"
-	});
-	
 	/**
 	 * Walks a markdown DOM and adds any discovered links to the given array.
 	 */
@@ -81,33 +58,20 @@ window.onload = function() {
 			findLinks(node[i], links);
 		}
 	}
-	
-	var validationService = {
-		checkSyntax : function(title, contents) {
-			var result = parse(contents);
-			var refs = result[1].references;
-			var links = [];
-			findLinks(result, links);
-			var problems = [];
-			for (var i = 0; i < links.length; i++) {
-				//check each link for a corresponding reference
-				if (!refs[links[i].ref]) {
-					//TODO links[i].original contains source.. we can find it to get line information
-					problems.push({
-						description: "Undefined link: " + links[i].ref,
-						line: getLine(contents, links[i].original),
-						start: 0,
-						severity: "error"
-					});
-				}
-			}
-			return { problems: problems };
-		}
+
+	//plugin metadata
+	var headers = {
+		name: "Orion Markdown Example 3",
+		version: "1.0",
+		description: "Markdown plugin that provides validation and outline."
 	};
+	var provider = new eclipse.PluginProvider(headers);
+
+
+	//outline service
+	
+	//validator service
 					
-	provider.registerServiceProvider("orion.edit.validator", validationService, {
-		contentType: ["text/x-web-markdown"]
-	});
 
 	//content type is always needed
 	provider.registerServiceProvider("orion.file.contenttype", {}, {
