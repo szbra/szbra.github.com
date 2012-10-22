@@ -11,7 +11,7 @@ window.onload = function() {
 
 	var serviceImpl = {
 		callback: function(args) {
-			return "<b>" + args.string + "<\/b>";
+			return args.string;
 		}
 	};
 	
