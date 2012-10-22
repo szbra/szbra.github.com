@@ -1,4 +1,4 @@
-/*global orion window */
+/*global eclipse window */
 
 window.onload = function() {
 	/**
@@ -58,12 +58,14 @@ window.onload = function() {
 			findLinks(node[i], links);
 		}
 	}
+
+	//plugin metadata
 	var headers = {
 		name: "Orion Markdown Example 4",
 		version: "1.0",
-		description: "Markdown plugin that provides advanced Markdown editor support."
+		description: "Markdown plugin that provides validation and outline."
 	};
-	var provider = new orion.PluginProvider(headers);
+	var provider = new eclipse.PluginProvider(headers);
 
 
 	//outline service
