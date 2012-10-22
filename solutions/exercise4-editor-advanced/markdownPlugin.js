@@ -41,7 +41,13 @@ window.onload = function() {
 		return outline;
 	}
 
-	var provider = new eclipse.PluginProvider();
+	//plugin metadata
+	var headers = {
+		name: "Orion Markdown Example 4",
+		version: "1.0",
+		description: "Markdown plugin that provides validation and outline."
+	};
+	var provider = new eclipse.PluginProvider(headers);
 
 	// outline service
 	var outlineService = {
